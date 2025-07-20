@@ -1,0 +1,122 @@
+import pygame
+import random
+import sys
+
+# Initialize
+pygame.init()
+WIDTH, HEIGHT = 400, 600
+SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Flappy Superman")
+CLOCK = pygame.time.Clock()
+FONT = pygame.font.SysFont("Arial", 32)
+
+# Load images
+BG = pygame.image.load("assets/background.png")
+SUPERMAN = pygame.image.load("assets/superman.png")
+PIPE_IMG = pygame.image.load("assets/pipe.png")
+
+# Resize images
+SUPERMAN = pygame.transform.scale(SUPERMAN, (50, 40))
+PIPE_IMG = pygame.transform.scale(PIPE_IMG, (70, 400))
+
+# Superman class
+class Superman:
+    def __init__(self):
+        self.x = 100
+        self.y = HEIGHT // 2
+        self.velocity = 0
+        self.gravity = 0.5
+        self.jump_power = -8
+
+    def draw(self):
+        SCREEN.blit(SUPERMAN, (self.x, self.y))
+
+    def move(self):
+        self.velocity += self.gravity
+        self.y += self.velocity
+
+    def jump(self):
+        self.velocity = self.jump_power
+
+# Pipe class
+class Pipe:
+    def __init__(self, x):
+        self.x = x
+        self.height = random.randint(100, 400)
+        self.gap = 150
+        self.top = self.height - PIPE_IMG.get_height()
+        self.bottom = self.height + self.gap
+        self.passed = False
+
+    def move(self):
+        self.x -= 3
+
+    def draw(self):
+        SCREEN.blit(PIPE_IMG, (self.x, self.top))
+        flipped_pipe = pygame.transform.flip(PIPE_IMG, False, True)
+        SCREEN.blit(flipped_pipe, (self.x, self.bottom))
+
+    def collide(self, superman):
+        sup_rect = pygame.Rect(superman.x, superman.y, 50, 40)
+        top_pipe_rect = pygame.Rect(self.x, self.top, 70, PIPE_IMG.get_height())
+        bottom_pipe_rect = pygame.Rect(self.x, self.bottom, 70, PIPE_IMG.get_height())
+        return sup_rect.colliderect(top_pipe_rect) or sup_rect.colliderect(bottom_pipe_rect)
+
+# Draw window
+def draw_window(superman, pipes, score):
+    SCREEN.blit(BG, (0, 0))
+    for pipe in pipes:
+        pipe.draw()
+    superman.draw()
+    score_text = FONT.render(f"Score: {score}", True, (255, 255, 255))
+    SCREEN.blit(score_text, (10, 10))
+    pygame.display.update()
+
+# Main loop
+def main():
+    superman = Superman()
+    pipes = [Pipe(400)]
+    score = 0
+    run = True
+
+    while run:
+        CLOCK.tick(60)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    superman.jump()
+
+        superman.move()
+
+        add_pipe = False
+        rem = []
+        for pipe in pipes:
+            pipe.move()
+            if pipe.collide(superman):
+                print("Game Over")
+                run = False
+            if pipe.x + 70 < 0:
+                rem.append(pipe)
+            if not pipe.passed and pipe.x < superman.x:
+                pipe.passed = True
+                add_pipe = True
+
+        if add_pipe:
+            score += 1
+            pipes.append(Pipe(WIDTH))
+
+        for r in rem:
+            pipes.remove(r)
+
+        if superman.y >= HEIGHT or superman.y < 0:
+            print("Game Over")
+            run = False
+
+        draw_window(superman, pipes, score)
+
+if __name__ == "__main__":
+    main()
