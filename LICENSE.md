@@ -94,6 +94,6 @@
     WIN.blit(score_text, (10, 10))
     pygame.display.update()
 
-    pygame.quit()
+            pygame.quit()
 
     
